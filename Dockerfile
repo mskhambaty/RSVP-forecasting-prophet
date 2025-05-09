@@ -1,39 +1,43 @@
-# Dockerfile
-
 # Start from an official R base image from rocker.
-FROM rocker/r-ver:4.3.3 # Or your chosen R version
+FROM rocker/r-ver:4.3.3
 
-# Install system dependencies
-USER root
-RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    sudo \
-    libssl-dev \
-    libcurl4-openssl-dev \
-    libxml2-dev \
-    cargo \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-USER ${NB_USER:-rstudio}
-
-# Set the working directory
+# Set a working directory within the container
 WORKDIR /app
 
-# Copy the R package installation script and run it
-COPY install_dependencies.R /app/install_dependencies.R
-RUN Rscript /app/install_dependencies.R
+# Install system dependencies required for R packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    libmariadb-dev-compat \
+    libpq-dev \
+    git \
+    vim \
+    locales \
+    && rm -rf /var/lib/apt/lists/*
 
-# ---- ADD THIS LINE ----
-# Copy the historical data CSV into the application directory
-COPY historical_rsvp_data.csv /app/historical_rsvp_data.csv
-# -----------------------
+# Set the locale to handle potential encoding issues
+RUN locale-gen en_US.utf8
+ENV LANG en_US.utf8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
-# Copy your API application files
-COPY model_logic.R /app/model_logic.R
-COPY main.R /app/main.R
+# Install necessary R packages. Adjust these based on your project's requirements.
+# For your project, it seems you'll definitely need 'prophet'.
+RUN R -e "install.packages(c('prophet'), repos='https://cloud.r-project.org/')"
 
-# Expose the port
-EXPOSE 8000
+# Copy project files into the working directory
+COPY . /app
 
-# Command to run your Plumber API
-CMD ["Rscript", "-e", "api <- plumber::plumb('/app/main.R'); api$run(host='0.0.0.0', port=8000)"]
+# If your application has other dependencies (e.g., Python), you can install them here.
+# Example for Python and pip:
+# RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && rm -rf /var/lib/apt/lists/*
+# RUN pip3 install -r requirements.txt
+
+# Define the command to run your R script or application.
+# Assuming you have a main R script named 'main.R'.
+CMD ["Rscript", "main.R"]
+
+# If you have a Shiny application, you might expose a port:
+# EXPOSE 80
