@@ -23,9 +23,8 @@ ENV LANG en_US.utf8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-# Install necessary R packages. Adjust these based on your project's requirements.
-# For your project, it seems you'll definitely need 'prophet'.
-RUN R -e "install.packages(c('prophet'), repos='https://cloud.r-project.org/')"
+# Install necessary R packages, including prophet and plumber.
+RUN R -e "install.packages(c('prophet', 'plumber'), repos='https://cloud.r-project.org/')"
 
 # Copy project files into the working directory
 COPY . /app
@@ -36,8 +35,9 @@ COPY . /app
 # RUN pip3 install -r requirements.txt
 
 # Define the command to run your R script or application.
-# Assuming you have a main R script named 'main.R'.
+# Assuming your main R script that uses plumber is 'main.R'.
 CMD ["Rscript", "main.R"]
 
-# If you have a Shiny application, you might expose a port:
-# EXPOSE 80
+# If your plumber application needs to listen on a specific port, expose it here.
+# The default for plumber might be 8000. Adjust if needed.
+# EXPOSE 8000
